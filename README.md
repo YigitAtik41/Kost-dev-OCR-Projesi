@@ -42,3 +42,7 @@ Sistem ayağa kalktığında **http://127.0.0.1:8000/arayuz** adresi otomatik ol
 **Geliştirici Dokümantasyonu (Swagger UI):**
 Arayüzden bağımsız olarak arka plandaki tüm API uç noktalarını (Endpoints) teknik düzeyde incelemek isterseniz, tarayıcınızda manuel olarak şu adrese gidebilirsiniz:
 **👉 http://127.0.0.1:8000/docs**
+EĞER ÇALIŞMIYORSA TESSRACT'IN YOLUNU KONTROL EDİN
+CMD'DEN 
+where tesseract
+yapın
