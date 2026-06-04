@@ -3,22 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coddest - Akıllı Fiş Okuma</title>
+    <title>Coddest - Akıllı Fiş Okuma & Gider Paylaşımı</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1, h2, h3 { text-align: center; color: #2c3e50; }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        .container { max-width: 800px; margin: 20px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3, h4 { text-align: center; color: #2c3e50; }
+        input, button, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
         input:focus { outline: none; border-color: #3498db; }
         button { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.3s; }
         button:hover { background-color: #2980b9; }
+        .btn-success { background-color: #2ecc71; }
+        .btn-success:hover { background-color: #27ae60; }
         .btn-danger { background-color: #e74c3c; }
         .btn-danger:hover { background-color: #c0392b; }
+        .btn-warning { background-color: #f1c40f; color: #333; }
+        .btn-warning:hover { background-color: #f39c12; }
         .hidden { display: none; }
-        #mesaj { text-align: center; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; }
-        .error-msg { background-color: #fadbd8; color: #c0392b; }
-        .success-msg { background-color: #d5f5e3; color: #27ae60; }
+        #mesaj { text-align: center; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; position: sticky; top: 10px; z-index: 1000; }
+        .error-msg { background-color: #fadbd8; color: #c0392b; border: 1px solid #e74c3c; }
+        .success-msg { background-color: #d5f5e3; color: #27ae60; border: 1px solid #2ecc71; }
         .profile-info { background: #ecf0f1; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+        .card { background: #fff; border: 1px solid #e0e0e0; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 25px 0; }
     </style>
 </head>
 <body>
@@ -32,33 +42,97 @@
             <input type="password" id="login-sifre" placeholder="Şifreniz">
             <button onclick="girisYap()">Giriş Yap</button>
             
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+            <hr>
             
             <h2>Yeni Kayıt</h2>
             <input type="text" id="kayit-ad" placeholder="Adınız">
             <input type="text" id="kayit-soyad" placeholder="Soyadınız">
             <input type="email" id="kayit-email" placeholder="E-posta adresiniz">
             <input type="password" id="kayit-sifre" placeholder="Şifreniz">
-            <button onclick="kayitOl()" style="background-color: #2ecc71;">Kayıt Ol</button>
+            <button onclick="kayitOl()" class="btn-success">Kayıt Ol</button>
         </div>
 
         <div id="dashboard-panel" class="hidden">
             <div class="profile-info">
                 <h3>Hoş Geldin, <span id="kullanici-adi"></span>!</h3>
                 <p style="text-align: center; margin-top: -10px; color: #7f8c8d;">
-                    Kayıtlı E-posta: <strong><span id="kullanici-email"></span></strong>
+                    Kayıtlı E-posta: <strong><span id="kullanici-email"></span></strong> | Kullanıcı ID: <strong><span id="kullanici-id"></span></strong>
                 </p>
                 <button onclick="cikisYap()" class="btn-danger">Oturumu Kapat</button>
+                <button onclick="bildirimleriGetir()" class="btn-warning" style="margin-top: 5px;">Bildirimlerimi Kontrol Et</button>
             </div>
-            
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
-            
-            <h3>Akıllı Fiş Yükle</h3>
-            <p style="font-size: 12px; text-align: center; color: #7f8c8d;">Geçerli bir JPG veya PNG fiş fotoğrafı seçin.</p>
-            <input type="file" id="fis-dosyasi" accept="image/png, image/jpeg">
-            <button onclick="fisYukle()">Yapay Zeka ile Analiz Et</button>
-            
-            <pre id="ocr-sonuc" style="background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 6px; overflow-x: auto; margin-top: 15px;"></pre>
+
+            <div id="bildirimler-alani" class="hidden card" style="background-color: #fff9c4;">
+                <h4 style="margin-top:0;">Son Bildirimleriniz</h4>
+                <ul id="bildirim-listesi" style="font-size: 14px; color: #333;"></ul>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="margin-top:0; color:#8e44ad;">Grup İşlemleri</h3>
+                    
+                    <h4>Grup Oluştur</h4>
+                    <input type="text" id="grup-adi" placeholder="Grup Adı">
+                    <input type="date" id="grup-baslangic">
+                    <input type="date" id="grup-bitis">
+                    <button onclick="grupOlustur()" class="btn-success">Grup Oluştur</button>
+
+                    <hr style="margin: 15px 0;">
+
+                    <h4>Gruba Üye Ekle</h4>
+                    <input type="number" id="uye-grup-id" placeholder="Hedef Grup ID">
+                    <input type="number" id="uye-kullanici-id" placeholder="Eklenecek Kullanıcı ID">
+                    <button onclick="grubaUyeEkle()">Üye Ekle</button>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top:0; color:#d35400;">Grup Hesap Özeti</h3>
+                    <input type="number" id="ozet-grup-id" placeholder="Özetini Görmek İstediğiniz Grup ID">
+                    <button onclick="grupOzetiniGetir()">Özeti Getir</button>
+                    
+                    <div id="ozet-sonuc-alani" style="margin-top: 15px; font-size: 13px;">
+                        </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0; color:#2980b9;">Harcama Ekleme</h3>
+                <div class="grid-2">
+                    <div>
+                        <h4 style="margin-top:0;">Manuel Harcama Gir</h4>
+                        <input type="number" id="harcama-grup-id" placeholder="Grup ID (Zorunlu)">
+                        <input type="text" id="harcama-aciklama" placeholder="Harcama Açıklaması">
+                        <input type="number" id="harcama-tutar" placeholder="Toplam Tutar (Örn: 150.50)" step="0.01">
+                        <input type="date" id="harcama-tarih">
+                        <button onclick="manuelHarcamaEkle()" class="btn-success">Harcamayı Kaydet</button>
+                    </div>
+
+                    <div style="border-left: 1px solid #eee; padding-left: 15px;">
+                        <h4 style="margin-top:0;">Yapay Zeka ile Fiş Okut</h4>
+                        <p style="font-size: 12px; color: #7f8c8d; margin-top: -10px;">Fişteki tarih ve tutarı otomatik çıkarır.</p>
+                        <input type="file" id="fis-dosyasi" accept="image/png, image/jpeg">
+                        <button onclick="fisYukle()">Fişi Analiz Et</button>
+                        <pre id="ocr-sonuc" style="background: #2c3e50; color: #ecf0f1; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px;"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="margin-top:0; color:#27ae60;">Ödeme Yap (Borç Kapat)</h3>
+                    <input type="number" id="odeme-alan-id" placeholder="Parayı Alacak Kullanıcının ID'si">
+                    <input type="number" id="odeme-tutar" placeholder="Ödenecek Tutar (TL)" step="0.01">
+                    <button onclick="odemeYap()" class="btn-success">Ödemeyi Gönder</button>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top:0; color:#c0392b;">Harcamaya İtiraz Et</h3>
+                    <input type="number" id="itiraz-harcama-id" placeholder="İtiraz Edilecek Harcama ID">
+                    <input type="text" id="itiraz-aciklama" placeholder="İtiraz Nedeni">
+                    <button onclick="itirazEt()" class="btn-danger">İtiraz Talebi Oluştur</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -75,40 +149,50 @@
             mesajDiv.textContent = metin;
             mesajDiv.className = tur === "success" ? "success-msg" : "error-msg";
             mesajDiv.classList.remove("hidden");
-            setTimeout(() => mesajDiv.classList.add("hidden"), 4000);
+            setTimeout(() => mesajDiv.classList.add("hidden"), 5000);
         }
 
-        async function kayitOl() {
-            const ad = document.getElementById("kayit-ad").value;
-            const soyad = document.getElementById("kayit-soyad").value;
-            const email = document.getElementById("kayit-email").value;
-            const sifre = document.getElementById("kayit-sifre").value;
+        async function ortakFetch(url, method = "GET", bodyData = null) {
+            const headers = { "Authorization": `Bearer ${token}` };
+            if (bodyData && !(bodyData instanceof FormData)) {
+                headers["Content-Type"] = "application/json";
+                bodyData = JSON.stringify(bodyData);
+            }
+            const config = { method, headers };
+            if (bodyData) config.body = bodyData;
 
+            const response = await fetch(API_URL + url, config);
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.detail || "Bir hata oluştu.");
+            }
+            return data;
+        }
+
+        // --- AUTH & PROFİL ---
+        async function kayitOl() {
             try {
                 const response = await fetch(`${API_URL}/kullanicilar/kayit`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ad, soyad, email, sifre })
+                    body: JSON.stringify({
+                        ad: document.getElementById("kayit-ad").value,
+                        soyad: document.getElementById("kayit-soyad").value,
+                        email: document.getElementById("kayit-email").value,
+                        sifre: document.getElementById("kayit-sifre").value
+                    })
                 });
-
-                if (response.ok) {
-                    mesajGoster("Kayıt başarılı! Şimdi giriş yapabilirsiniz.", "success");
-                } else {
-                    const data = await response.json();
-                    mesajGoster("Kayıt Hatası: " + data.detail);
-                }
-            } catch (error) {
-                mesajGoster("Sunucuya bağlanılamadı. API çalışıyor mu?");
-            }
+                const data = await response.json();
+                if (response.ok) mesajGoster("Kayıt başarılı! Giriş yapabilirsiniz.", "success");
+                else mesajGoster("Hata: " + data.detail);
+            } catch (err) { mesajGoster("Sunucuya ulaşılamadı."); }
         }
 
         async function girisYap() {
-            const email = document.getElementById("login-email").value;
-            const sifre = document.getElementById("login-sifre").value;
-
             const formData = new URLSearchParams();
-            formData.append("username", email);
-            formData.append("password", sifre);
+            formData.append("username", document.getElementById("login-email").value);
+            formData.append("password", document.getElementById("login-sifre").value);
 
             try {
                 const response = await fetch(`${API_URL}/giris`, {
@@ -116,68 +200,27 @@
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
                     body: formData
                 });
-
+                const data = await response.json();
                 if (response.ok) {
-                    const data = await response.json();
                     token = data.access_token;
                     localStorage.setItem("coddest_token", token);
-                    mesajGoster("Giriş başarılı! Yönlendiriliyorsunuz...", "success");
+                    mesajGoster("Giriş başarılı!", "success");
                     profiliGetir();
                 } else {
                     mesajGoster("E-posta veya şifre hatalı!");
                 }
-            } catch (error) {
-                mesajGoster("Sunucuya bağlanılamadı. API çalışıyor mu?");
-            }
+            } catch (err) { mesajGoster("Sunucuya ulaşılamadı."); }
         }
 
         async function profiliGetir() {
-            const response = await fetch(`${API_URL}/profil`, {
-                method: "GET",
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
+            try {
+                const data = await ortakFetch("/profil");
                 document.getElementById("auth-panel").classList.add("hidden");
                 document.getElementById("dashboard-panel").classList.remove("hidden");
                 document.getElementById("kullanici-adi").textContent = `${data.ad} ${data.soyad}`;
                 document.getElementById("kullanici-email").textContent = data.email;
-            } else {
-                cikisYap();
-            }
-        }
-
-        async function fisYukle() {
-            const dosyaInput = document.getElementById("fis-dosyasi");
-            if (dosyaInput.files.length === 0) {
-                mesajGoster("Lütfen önce bir fiş görseli seçin.");
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("file", dosyaInput.files[0]);
-
-            const sonucAlani = document.getElementById("ocr-sonuc");
-            sonucAlani.textContent = "Yapay zeka fişi okuyor, lütfen bekleyin...";
-
-            try {
-                const response = await fetch(`${API_URL}/fis-oku`, {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${token}` },
-                    body: formData
-                });
-
-                const data = await response.json();
-                if (response.ok) {
-                    sonucAlani.textContent = JSON.stringify(data, null, 2);
-                    mesajGoster("Fiş başarıyla analiz edildi!", "success");
-                } else {
-                    sonucAlani.textContent = "HATA: " + data.detail;
-                }
-            } catch (error) {
-                sonucAlani.textContent = "Bağlantı hatası oluştu.";
-            }
+                document.getElementById("kullanici-id").textContent = data.user_id;
+            } catch (err) { cikisYap(); }
         }
 
         function cikisYap() {
@@ -185,9 +228,139 @@
             token = null;
             document.getElementById("auth-panel").classList.remove("hidden");
             document.getElementById("dashboard-panel").classList.add("hidden");
-            document.getElementById("login-sifre").value = "";
-            mesajGoster("Başarıyla çıkış yaptınız.", "success");
+            mesajGoster("Çıkış yapıldı.", "success");
         }
+
+        // --- GRUP İŞLEMLERİ ---
+        async function grupOlustur() {
+            try {
+                const baslangic = document.getElementById("grup-baslangic").value;
+                const bitis = document.getElementById("grup-bitis").value;
+                if(!baslangic || !bitis) return mesajGoster("Tarihleri doldurun!");
+
+                const data = await ortakFetch("/gruplar", "POST", {
+                    grup_adi: document.getElementById("grup-adi").value,
+                    baslangic_tarihi: baslangic,
+                    bitis_tarihi: bitis
+                });
+                mesajGoster(`Grup oluşturuldu! Grup ID'niz: ${data.group_id}`, "success");
+            } catch (err) { mesajGoster(err.message); }
+        }
+
+        async function grubaUyeEkle() {
+            try {
+                const groupId = document.getElementById("uye-grup-id").value;
+                const userId = document.getElementById("uye-kullanici-id").value;
+                await ortakFetch(`/gruplar/${groupId}/uyeler`, "POST", { user_id: parseInt(userId) });
+                mesajGoster("Üye başarıyla eklendi!", "success");
+            } catch (err) { mesajGoster(err.message); }
+        }
+
+        async function grupOzetiniGetir() {
+            try {
+                const groupId = document.getElementById("ozet-grup-id").value;
+                if(!groupId) return mesajGoster("Lütfen bir Grup ID girin.");
+                
+                const data = await ortakFetch(`/gruplar/${groupId}/ozet`);
+                let html = `<table><tr><th>Kullanıcı Adı</th><th>Bakiye Durumu</th></tr>`;
+                
+                data.forEach(uye => {
+                    let bakiyeRenk = uye.bakiye >= 0 ? "green" : "red";
+                    let bakiyeYazi = uye.bakiye >= 0 ? `+${uye.bakiye} TL (Alacaklı/Ödeşmiş)` : `${uye.bakiye} TL (Borçlu)`;
+                    html += `<tr>
+                                <td>${uye.ad} ${uye.soyad} (ID: ${uye.user_id})</td>
+                                <td style="color: ${bakiyeRenk}; font-weight:bold;">${bakiyeYazi}</td>
+                             </tr>`;
+                });
+                html += `</table>`;
+                document.getElementById("ozet-sonuc-alani").innerHTML = html;
+                mesajGoster("Grup özeti getirildi.", "success");
+            } catch (err) { 
+                document.getElementById("ozet-sonuc-alani").innerHTML = "";
+                mesajGoster(err.message); 
+            }
+        }
+
+        // --- HARCAMA İŞLEMLERİ ---
+        async function manuelHarcamaEkle() {
+            try {
+                const groupId = document.getElementById("harcama-grup-id").value;
+                if(!groupId) return mesajGoster("Harcamanın ekleneceği Grup ID'yi yazmalısınız.");
+
+                await ortakFetch(`/gruplar/${groupId}/harcamalar`, "POST", {
+                    aciklama: document.getElementById("harcama-aciklama").value,
+                    toplam_tutar: parseFloat(document.getElementById("harcama-tutar").value),
+                    tarih: document.getElementById("harcama-tarih").value
+                });
+                mesajGoster("Manuel harcama başarıyla kaydedildi!", "success");
+            } catch (err) { mesajGoster(err.message); }
+        }
+
+        async function fisYukle() {
+            const dosyaInput = document.getElementById("fis-dosyasi");
+            if (dosyaInput.files.length === 0) return mesajGoster("Fiş görseli seçin.");
+
+            const formData = new FormData();
+            formData.append("file", dosyaInput.files[0]);
+            
+            const sonucAlani = document.getElementById("ocr-sonuc");
+            sonucAlani.textContent = "Yapay zeka analiz ediyor, bekleyin...";
+
+            try {
+                const data = await ortakFetch("/fis-oku", "POST", formData);
+                sonucAlani.textContent = JSON.stringify(data, null, 2);
+                mesajGoster("OCR Analizi başarılı! Çıkan sonuçları manuel girişte kullanabilirsiniz.", "success");
+            } catch (err) {
+                sonucAlani.textContent = "HATA: " + err.message;
+                mesajGoster(err.message);
+            }
+        }
+
+        // --- ÖDEME, İTİRAZ, BİLDİRİM ---
+        async function odemeYap() {
+            try {
+                await ortakFetch("/odemeler", "POST", {
+                    alan_id: parseInt(document.getElementById("odeme-alan-id").value),
+                    tutar: parseFloat(document.getElementById("odeme-tutar").value)
+                });
+                mesajGoster("Ödeme işlemi başarıyla gerçekleştirildi!", "success");
+            } catch (err) { mesajGoster(err.message); }
+        }
+
+        async function itirazEt() {
+            try {
+                const expenseId = document.getElementById("itiraz-harcama-id").value;
+                if(!expenseId) return mesajGoster("Harcama ID gerekli.");
+
+                await ortakFetch(`/harcamalar/${expenseId}/itiraz`, "POST", {
+                    expense_id: parseInt(expenseId),
+                    aciklama: document.getElementById("itiraz-aciklama").value
+                });
+                mesajGoster("İtiraz talebi başarıyla iletildi!", "success");
+            } catch (err) { mesajGoster(err.message); }
+        }
+
+        async function bildirimleriGetir() {
+            try {
+                const data = await ortakFetch("/bildirimler");
+                const liste = document.getElementById("bildirim-listesi");
+                const alan = document.getElementById("bildirimler-alani");
+                
+                liste.innerHTML = "";
+                if(data.length === 0) {
+                    liste.innerHTML = "<li>Henüz yeni bildiriminiz yok.</li>";
+                } else {
+                    data.forEach(b => {
+                        liste.innerHTML += `<li style="margin-bottom:8px;">
+                            <strong>${new Date(b.tarih).toLocaleDateString("tr-TR")}:</strong> ${b.mesaj}
+                        </li>`;
+                    });
+                }
+                alan.classList.remove("hidden");
+                setTimeout(() => alan.classList.add("hidden"), 10000); // 10 saniye sonra gizle
+            } catch (err) { mesajGoster(err.message); }
+        }
+
     </script>
 </body>
 </html>
