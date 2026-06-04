@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coddest - Akıllı Fiş Okuma</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { text-align: center; color: #2c3e50; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input:focus { outline: none; border-color: #3498db; }
+        button { background-color: #3498db; color: white; border: none; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: #2980b9; }
+        .btn-danger { background-color: #e74c3c; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .hidden { display: none; }
+        #mesaj { text-align: center; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-weight: bold; }
+        .error-msg { background-color: #fadbd8; color: #c0392b; }
+        .success-msg { background-color: #d5f5e3; color: #27ae60; }
+        .profile-info { background: #ecf0f1; padding: 15px; border-radius: 6px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Coddest Platformu</h1>
+        <div id="mesaj" class="hidden"></div>
+
+        <div id="auth-panel">
+            <h2>Sisteme Giriş</h2>
+            <input type="email" id="login-email" placeholder="E-posta adresiniz">
+            <input type="password" id="login-sifre" placeholder="Şifreniz">
+            <button onclick="girisYap()">Giriş Yap</button>
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+            
+            <h2>Yeni Kayıt</h2>
+            <input type="text" id="kayit-ad" placeholder="Adınız">
+            <input type="text" id="kayit-soyad" placeholder="Soyadınız">
+            <input type="email" id="kayit-email" placeholder="E-posta adresiniz">
+            <input type="password" id="kayit-sifre" placeholder="Şifreniz">
+            <button onclick="kayitOl()" style="background-color: #2ecc71;">Kayıt Ol</button>
+        </div>
+
+        <div id="dashboard-panel" class="hidden">
+            <div class="profile-info">
+                <h3>Hoş Geldin, <span id="kullanici-adi"></span>!</h3>
+                <p style="text-align: center; margin-top: -10px; color: #7f8c8d;">
+                    Kayıtlı E-posta: <strong><span id="kullanici-email"></span></strong>
+                </p>
+                <button onclick="cikisYap()" class="btn-danger">Oturumu Kapat</button>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+            
+            <h3>Akıllı Fiş Yükle</h3>
+            <p style="font-size: 12px; text-align: center; color: #7f8c8d;">Geçerli bir JPG veya PNG fiş fotoğrafı seçin.</p>
+            <input type="file" id="fis-dosyasi" accept="image/png, image/jpeg">
+            <button onclick="fisYukle()">Yapay Zeka ile Analiz Et</button>
+            
+            <pre id="ocr-sonuc" style="background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 6px; overflow-x: auto; margin-top: 15px;"></pre>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let token = localStorage.getItem("coddest_token");
+
+        window.onload = () => {
+            if (token) profiliGetir();
+        };
+
+        function mesajGoster(metin, tur = "error") {
+            const mesajDiv = document.getElementById("mesaj");
+            mesajDiv.textContent = metin;
+            mesajDiv.className = tur === "success" ? "success-msg" : "error-msg";
+            mesajDiv.classList.remove("hidden");
+            setTimeout(() => mesajDiv.classList.add("hidden"), 4000);
+        }
+
+        async function kayitOl() {
+            const ad = document.getElementById("kayit-ad").value;
+            const soyad = document.getElementById("kayit-soyad").value;
+            const email = document.getElementById("kayit-email").value;
+            const sifre = document.getElementById("kayit-sifre").value;
+
+            try {
+                const response = await fetch(`${API_URL}/kullanicilar/kayit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ad, soyad, email, sifre })
+                });
+
+                if (response.ok) {
+                    mesajGoster("Kayıt başarılı! Şimdi giriş yapabilirsiniz.", "success");
+                } else {
+                    const data = await response.json();
+                    mesajGoster("Kayıt Hatası: " + data.detail);
+                }
+            } catch (error) {
+                mesajGoster("Sunucuya bağlanılamadı. API çalışıyor mu?");
+            }
+        }
+
+        async function girisYap() {
+            const email = document.getElementById("login-email").value;
+            const sifre = document.getElementById("login-sifre").value;
+
+            const formData = new URLSearchParams();
+            formData.append("username", email);
+            formData.append("password", sifre);
+
+            try {
+                const response = await fetch(`${API_URL}/giris`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    token = data.access_token;
+                    localStorage.setItem("coddest_token", token);
+                    mesajGoster("Giriş başarılı! Yönlendiriliyorsunuz...", "success");
+                    profiliGetir();
+                } else {
+                    mesajGoster("E-posta veya şifre hatalı!");
+                }
+            } catch (error) {
+                mesajGoster("Sunucuya bağlanılamadı. API çalışıyor mu?");
+            }
+        }
+
+        async function profiliGetir() {
+            const response = await fetch(`${API_URL}/profil`, {
+                method: "GET",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById("auth-panel").classList.add("hidden");
+                document.getElementById("dashboard-panel").classList.remove("hidden");
+                document.getElementById("kullanici-adi").textContent = `${data.ad} ${data.soyad}`;
+                document.getElementById("kullanici-email").textContent = data.email;
+            } else {
+                cikisYap();
+            }
+        }
+
+        async function fisYukle() {
+            const dosyaInput = document.getElementById("fis-dosyasi");
+            if (dosyaInput.files.length === 0) {
+                mesajGoster("Lütfen önce bir fiş görseli seçin.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", dosyaInput.files[0]);
+
+            const sonucAlani = document.getElementById("ocr-sonuc");
+            sonucAlani.textContent = "Yapay zeka fişi okuyor, lütfen bekleyin...";
+
+            try {
+                const response = await fetch(`${API_URL}/fis-oku`, {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    sonucAlani.textContent = JSON.stringify(data, null, 2);
+                    mesajGoster("Fiş başarıyla analiz edildi!", "success");
+                } else {
+                    sonucAlani.textContent = "HATA: " + data.detail;
+                }
+            } catch (error) {
+                sonucAlani.textContent = "Bağlantı hatası oluştu.";
+            }
+        }
+
+        function cikisYap() {
+            localStorage.removeItem("coddest_token");
+            token = null;
+            document.getElementById("auth-panel").classList.remove("hidden");
+            document.getElementById("dashboard-panel").classList.add("hidden");
+            document.getElementById("login-sifre").value = "";
+            mesajGoster("Başarıyla çıkış yaptınız.", "success");
+        }
+    </script>
+</body>
+</html>

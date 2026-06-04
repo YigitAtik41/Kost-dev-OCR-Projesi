@@ -26,17 +26,19 @@ Terminali açın, projenin bulunduğu klasöre gidin ve aşağıdaki komutu çal
 `pip install -r requirements.txt`
 
 **4. Sunucuyu Başlatın:**
-`uvicorn main:app --reload`
+`python main.py`
 
-## Sistemi Test Etme (Swagger UI)
+*(Sunucu başlatıldığı anda proje web arayüzü varsayılan tarayıcınızda otomatik olarak açılacaktır.)*
 
-Sunucu çalıştıktan sonra tarayıcınızı açın ve şu adrese gidin:
+## Sistemi Test Etme (Web Arayüzü & API)
+
+Sistem ayağa kalktığında **http://127.0.0.1:8000/arayuz** adresi otomatik olarak açılır ve projenin kullanıcı dostu ön yüzü karşınıza çıkar.
+
+**Arayüz Üzerinden Test:**
+1. Açılan ekrandan sisteme yeni bir kullanıcı kaydedin.
+2. Aynı bilgilerle giriş yapın (Yetkilendirme token'ı otomatik alınacaktır).
+3. Akıllı fiş yükleme alanından (JPG/PNG) bir fiş seçip "Yapay Zeka ile Analiz Et" butonuna tıklayarak OCR sistemini test edebilirsiniz.
+
+**Geliştirici Dokümantasyonu (Swagger UI):**
+Arayüzden bağımsız olarak arka plandaki tüm API uç noktalarını (Endpoints) teknik düzeyde incelemek isterseniz, tarayıcınızda manuel olarak şu adrese gidebilirsiniz:
 **👉 http://127.0.0.1:8000/docs**
-
-Tüm uç noktalarımızı (Endpoints) buradan test edebilirsiniz. 
-
-**Nasıl Test Edilir?**
-1. `POST /kullanicilar/kayit` kısmından sisteme bir kullanıcı kaydedin.
-2. Sayfanın sağ üstündeki yeşil **Authorize** butonuna tıklayın.
-3. Açılan pencerede kaydettiğiniz e-posta ve şifrenizi girerek giriş yapın (Swagger token atama işlemini arka planda otomatik halledecektir).
-4. Artık sistemdeki fiş yükleme, grup oluşturma ve ödeme gibi tüm işlemleri yetkili olarak test edebilirsiniz!
