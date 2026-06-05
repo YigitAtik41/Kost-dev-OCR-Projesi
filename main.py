@@ -140,7 +140,7 @@ def grup_olustur(grup: schemas.GrupCreate, db: Session = Depends(get_db), mevcut
     
     db.add(yeni_grup)
     db.commit()
-    refresh(yeni_grup)
+    db.refresh(yeni_grup) # Hata buradaydı, düzeltildi!
     
     ilk_uye = models.GrupUyeleri(
         group_id=yeni_grup.group_id,
