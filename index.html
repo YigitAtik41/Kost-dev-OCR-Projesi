@@ -65,9 +65,14 @@
 
         .notification-list, .group-list { list-style: none; padding: 0; margin: 0; }
         .notification-item { padding: 12px; border-radius: 8px; background: #f8fafc; margin-bottom: 10px; border-left: 4px solid var(--primary); }
-        .group-item { padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 10px; background: white; transition: all 0.2s;}
+        
+        .group-item { padding: 15px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 15px; background: white; transition: all 0.2s;}
         .group-item:hover { border-color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
         .group-id-badge { background: var(--primary); color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;}
+        
+        .group-details { margin-top: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px dashed var(--border); display: none; }
+        .group-details.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -121,10 +126,10 @@
             </div>
 
             <div id="page-groups" class="page-section hidden">
-                <div class="page-header"><h2>Grup Yönetimi</h2><p>Yeni harcama grupları oluşturun, üye ekleyin veya mevcut gruplarınızı silin.</p></div>
+                <div class="page-header"><h2>Grup Yönetimi</h2><p>Harcama gruplarınızı yönetin, yeni üyeler ekleyin ve borç özetlerini doğrudan görün.</p></div>
 
                 <div class="card" style="margin-bottom: 24px;">
-                    <div class="card-title" style="color: var(--primary);"><i class='bx bx-list-ul'></i> Gruplarım</div>
+                    <div class="card-title" style="color: var(--primary);"><i class='bx bx-list-ul'></i> Gruplarım ve Hesap Özetleri</div>
                     <button onclick="gruplarimiGetir()" class="btn-outline" style="width: auto; margin-bottom: 15px; font-size: 12px; padding: 8px 12px;"><i class='bx bx-refresh'></i> Listeyi Güncelle</button>
                     <ul id="gruplarim-listesi" class="group-list">
                         <p style="color: var(--text-muted); font-size: 14px;">Gruplarınız yükleniyor...</p>
@@ -148,15 +153,6 @@
                         <input type="number" id="uye-kullanici-id" placeholder="Eklenecek Kullanıcı ID'si">
                         <button onclick="grubaUyeEkle()">Kullanıcıyı Ekle</button>
                     </div>
-                </div>
-
-                <div class="card" style="margin-top: 24px;">
-                    <div class="card-title"><i class='bx bx-bar-chart-alt-2'></i> Grup Hesap Özeti</div>
-                    <div style="display: flex; gap: 10px;">
-                        <input type="number" id="ozet-grup-id" placeholder="Grup ID Giriniz" style="max-width: 200px;">
-                        <button onclick="grupOzetiniGetir()" style="width: auto;">Özeti Getir</button>
-                    </div>
-                    <div id="ozet-sonuc-alani" style="margin-top: 20px; overflow-x: auto;"><p style="color: var(--text-muted); font-size: 14px;">Lütfen bir grup ID'si girerek özet çekin.</p></div>
                 </div>
             </div>
 
@@ -307,7 +303,7 @@
             document.getElementById("auth-page").classList.remove("hidden"); document.getElementById("app-layout").classList.add("hidden");
         }
 
-        // --- GRUP İŞLEMLERİ VE SİLME ---
+        // --- GRUP İŞLEMLERİ (Özet Gösterim) ---
         async function gruplarimiGetir() {
             try {
                 const data = await ortakFetch("/gruplar");
@@ -321,20 +317,58 @@
                 
                 data.forEach(grup => {
                     liste.innerHTML += `
-                        <li class="group-item" style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span class="group-id-badge" style="margin-right: 8px;">ID: ${grup.group_id}</span>
-                                <span style="font-weight: 600; color: var(--dark);">${grup.grup_adi}</span>
-                                <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">
-                                    <i class='bx bx-calendar'></i> ${grup.baslangic_tarihi} / ${grup.bitis_tarihi}
+                        <li class="group-item">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <span class="group-id-badge" style="margin-right: 8px;">ID: ${grup.group_id}</span>
+                                    <span style="font-weight: 600; color: var(--dark);">${grup.grup_adi}</span>
+                                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 5px;">
+                                        <i class='bx bx-calendar'></i> ${grup.baslangic_tarihi} / ${grup.bitis_tarihi}
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button onclick="grupDetayGoster(${grup.group_id})" class="btn-success" style="width: auto; padding: 6px 12px; font-size: 12px; margin: 0;">
+                                        <i class='bx bx-show'></i> Üyeleri ve Bakiyeyi Gör
+                                    </button>
+                                    <button onclick="grupSil(${grup.group_id})" class="btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin: 0;">
+                                        <i class='bx bx-trash'></i> Sil
+                                    </button>
                                 </div>
                             </div>
-                            <button onclick="grupSil(${grup.group_id})" class="btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin: 0;">
-                                <i class='bx bx-trash'></i> Sil
-                            </button>
+                            <div id="grup-detay-${grup.group_id}" class="group-details"></div>
                         </li>`;
                 });
             } catch (err) { console.log("Grup çekme hatası:", err.message); }
+        }
+
+        async function grupDetayGoster(groupId) {
+            const detayDiv = document.getElementById(`grup-detay-${groupId}`);
+            
+            if (detayDiv.classList.contains("active")) {
+                detayDiv.classList.remove("active");
+                return;
+            }
+
+            detayDiv.innerHTML = "<p style='font-size:13px; color:var(--text-muted);'><i class='bx bx-loader-alt bx-spin'></i> Üyeler ve bakiyeler yükleniyor...</p>";
+            detayDiv.classList.add("active");
+
+            try {
+                const data = await ortakFetch(`/gruplar/${groupId}/ozet`);
+                
+                let html = `<table style="margin-top:0;"><tr><th>Kullanıcı (ID)</th><th>Bakiye Durumu</th></tr>`;
+                data.forEach(uye => {
+                    let bakiyeRenk = uye.bakiye >= 0 ? "var(--secondary)" : "var(--danger)";
+                    let bakiyeYazi = uye.bakiye >= 0 ? `+${uye.bakiye} TL (Alacaklı)` : `${uye.bakiye} TL (Borçlu)`;
+                    html += `<tr>
+                                <td style="padding: 8px; font-size: 13px;"><i class='bx bx-user' style="margin-right:5px; color:var(--text-muted)"></i> ${uye.ad} ${uye.soyad} (ID: ${uye.user_id})</td>
+                                <td style="color: ${bakiyeRenk}; font-weight:600; padding: 8px; font-size: 13px;">${bakiyeYazi}</td>
+                             </tr>`;
+                });
+                html += `</table>`;
+                detayDiv.innerHTML = html;
+            } catch (err) {
+                detayDiv.innerHTML = `<p style="color:var(--danger); font-size:13px;"><i class='bx bx-error'></i> Hata: ${err.message}</p>`;
+            }
         }
 
         async function grupSil(groupId) {
@@ -366,24 +400,7 @@
             } catch (err) { mesajGoster(err.message); }
         }
 
-        async function grupOzetiniGetir() {
-            try {
-                const groupId = document.getElementById("ozet-grup-id").value;
-                if(!groupId) return mesajGoster("Lütfen bir Grup ID girin.");
-                const data = await ortakFetch(`/gruplar/${groupId}/ozet`);
-                let html = `<table><tr><th>Kullanıcı (ID)</th><th>Bakiye Durumu</th></tr>`;
-                data.forEach(uye => {
-                    let bakiyeRenk = uye.bakiye >= 0 ? "var(--secondary)" : "var(--danger)";
-                    let bakiyeYazi = uye.bakiye >= 0 ? `+${uye.bakiye} TL (Alacaklı)` : `${uye.bakiye} TL (Borçlu)`;
-                    html += `<tr><td><i class='bx bx-user' style="margin-right:5px; color:var(--text-muted)"></i> ${uye.ad} ${uye.soyad} (ID: ${uye.user_id})</td><td style="color: ${bakiyeRenk}; font-weight:600;">${bakiyeYazi}</td></tr>`;
-                });
-                html += `</table>`;
-                document.getElementById("ozet-sonuc-alani").innerHTML = html;
-                mesajGoster("Grup hesap özeti güncellendi.", "success");
-            } catch (err) { document.getElementById("ozet-sonuc-alani").innerHTML = `<p style="color:var(--danger);">${err.message}</p>`; }
-        }
-
-        // --- HARCAMA İŞLEMLERİ (GÜNCELLENDİ) ---
+        // --- HARCAMA İŞLEMLERİ ---
         async function harcamalarimiGetir() {
             try {
                 const data = await ortakFetch("/harcamalar");
@@ -428,32 +445,19 @@
                 const tutarRaw = document.getElementById("harcama-tutar").value;
                 const tarih = document.getElementById("harcama-tarih").value;
 
-                // 1. Boşluk Kontrolü
                 if(!groupId) return mesajGoster("Harcamanın ekleneceği Grup ID'yi yazmalısınız.");
                 if(!aciklama || !tutarRaw || !tarih) return mesajGoster("Lütfen Açıklama, Tutar ve Tarih alanlarını eksiksiz doldurun.");
 
-                // 2. Tutar Güvenliği (Kullanıcı 25,50 de girse 25.50 de girse sorunsuz kabul edilir)
                 const tutar = parseFloat(tutarRaw.toString().replace(',', '.'));
                 if(isNaN(tutar) || tutar <= 0) return mesajGoster("Lütfen geçerli bir tutar girin.");
 
-                // 3. API'ye İstek At
-                await ortakFetch(`/gruplar/${groupId}/harcamalar`, "POST", { 
-                    aciklama: aciklama, 
-                    toplam_tutar: tutar, 
-                    tarih: tarih 
-                });
-                
-                // 4. İşlem Başarılıysa Formu Temizle ve Listeyi Yenile
+                await ortakFetch(`/gruplar/${groupId}/harcamalar`, "POST", { aciklama: aciklama, toplam_tutar: tutar, tarih: tarih });
                 mesajGoster("Manuel harcama başarıyla kaydedildi!", "success");
                 document.getElementById("harcama-aciklama").value = "";
                 document.getElementById("harcama-tutar").value = "";
                 document.getElementById("harcama-tarih").value = "";
-                
                 harcamalarimiGetir(); 
-            } catch (err) { 
-                // Tarih uyumsuzluğu hatası burada arayüze basılır!
-                mesajGoster(err.message); 
-            }
+            } catch (err) { mesajGoster(err.message); }
         }
 
         async function fisYukle() {
@@ -464,7 +468,6 @@
             try {
                 const data = await ortakFetch("/fis-oku", "POST", formData);
                 sonucAlani.textContent = JSON.stringify(data, null, 2);
-                
                 if(data.basarili) {
                     mesajGoster("OCR Analizi başarılı! Veriler forma aktarıldı.", "success");
                     if(data.toplam_tutar) document.getElementById("harcama-tutar").value = data.toplam_tutar;

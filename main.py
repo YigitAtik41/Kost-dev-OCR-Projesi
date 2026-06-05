@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from jose import jwt
+from contextlib import asynccontextmanager
 import webbrowser
 import threading
 import time
@@ -17,10 +18,21 @@ from datetime import datetime
 
 models.Base.metadata.create_all(bind=engine)
 
+def tarayiciyi_ac():
+    time.sleep(1.5)
+    webbrowser.open("http://127.0.0.1:8000/arayuz")
+
+# YENİ MODERN BAŞLANGIÇ YÖNTEMİ (Sarı uyarıyı yok eder)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    threading.Thread(target=tarayiciyi_ac).start()
+    yield
+
 app = FastAPI(
     title="Coddest - Akıllı Fiş Okuma ve Gider Paylaşım Platformu",
     description="Sistem Analizi ve Tasarımı Projesi Backend Servisi",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
@@ -30,14 +42,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-def tarayiciyi_ac():
-    time.sleep(1.5)
-    webbrowser.open("http://127.0.0.1:8000/arayuz")
-
-@app.on_event("startup")
-def startup_event():
-    threading.Thread(target=tarayiciyi_ac).start()
 
 @app.get("/arayuz", include_in_schema=False)
 def arayuz_sayfasini_getir():
