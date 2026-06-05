@@ -7,7 +7,7 @@ from jose import jwt
 import webbrowser
 import threading
 import time
-import uvicorn  # Doğrudan çalıştırabilmek için uvicorn eklendi
+import uvicorn
 import models
 import schemas
 import auth
@@ -23,7 +23,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Ayarları (Web arayüzünün hata vermeden API ile konuşabilmesi için eklendi)
+# CORS Ayarları
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,21 +34,17 @@ app.add_middleware(
 
 # --- TARAYICIYI OTOMATİK AÇMA VE ARAYÜZ SERVİSİ ---
 def tarayiciyi_ac():
-    time.sleep(1.5) # Sunucunun ayağa kalkması için kısa bir süre bekliyoruz
+    time.sleep(1.5)
     webbrowser.open("http://127.0.0.1:8000/arayuz")
 
 @app.on_event("startup")
 def startup_event():
-    # Sunucu başlarken tarayıcıyı arka planda (thread) tetikliyoruz ki uvicorn kilitlenmesin
     threading.Thread(target=tarayiciyi_ac).start()
 
-# index.html dosyasını API üzerinden sunan uç nokta
 @app.get("/arayuz", include_in_schema=False)
 def arayuz_sayfasini_getir():
     return FileResponse("index.html")
 
-
-# Veritabanı bağlantısını her istekte açıp kapatmak için gerekli fonksiyon
 def get_db():
     db = SessionLocal()
     try:
@@ -140,7 +136,7 @@ def grup_olustur(grup: schemas.GrupCreate, db: Session = Depends(get_db), mevcut
     
     db.add(yeni_grup)
     db.commit()
-    db.refresh(yeni_grup) # Hata buradaydı, düzeltildi!
+    db.refresh(yeni_grup)
     
     ilk_uye = models.GrupUyeleri(
         group_id=yeni_grup.group_id,
@@ -150,6 +146,13 @@ def grup_olustur(grup: schemas.GrupCreate, db: Session = Depends(get_db), mevcut
     db.commit()
     
     return yeni_grup
+
+@app.get("/gruplar", response_model=list[schemas.GrupResponse])
+def gruplarimi_getir(db: Session = Depends(get_db), mevcut_kullanici: models.Kullanici = Depends(aktif_kullaniciyi_getir)):
+    uye_oldugu_gruplar = db.query(models.GrupUyeleri).filter(models.GrupUyeleri.user_id == mevcut_kullanici.user_id).all()
+    grup_idleri = [uye.group_id for uye in uye_oldugu_gruplar]
+    gruplar = db.query(models.Grup).filter(models.Grup.group_id.in_(grup_idleri)).all()
+    return gruplar
 
 @app.post("/gruplar/{group_id}/uyeler")
 def gruba_uye_ekle(group_id: int, uye_data: schemas.UyeEkle, db: Session = Depends(get_db), mevcut_kullanici: models.Kullanici = Depends(aktif_kullaniciyi_getir)):
@@ -217,6 +220,8 @@ def grup_ozeti(group_id: int, db: Session = Depends(get_db), mevcut_kullanici: m
         
     return ozet_listesi
 
+# --- HARCAMA YÖNETİMİ ---
+
 @app.post("/gruplar/{group_id}/harcamalar")
 def harcama_ekle(group_id: int, harcama: schemas.HarcamaCreate, db: Session = Depends(get_db), mevcut_kullanici: models.Kullanici = Depends(aktif_kullaniciyi_getir)):
     grup = db.query(models.Grup).filter(models.Grup.group_id == group_id).first()
@@ -239,7 +244,25 @@ def harcama_ekle(group_id: int, harcama: schemas.HarcamaCreate, db: Session = De
     
     return yeni_harcama
 
-# --- SPRINT 5: ÖDEME, İTİRAZ VE BİLDİRİM UÇ NOKTALARI ---
+@app.get("/harcamalar")
+def harcamalarimi_getir(db: Session = Depends(get_db), mevcut_kullanici: models.Kullanici = Depends(aktif_kullaniciyi_getir)):
+    harcamalar = db.query(models.Harcama).filter(models.Harcama.odeyen_id == mevcut_kullanici.user_id).all()
+    return harcamalar
+
+@app.delete("/harcamalar/{expense_id}")
+def harcama_sil(expense_id: int, db: Session = Depends(get_db), mevcut_kullanici: models.Kullanici = Depends(aktif_kullaniciyi_getir)):
+    harcama = db.query(models.Harcama).filter(models.Harcama.expense_id == expense_id).first()
+    if not harcama:
+        raise HTTPException(status_code=404, detail="Harcama bulunamadı.")
+        
+    if harcama.odeyen_id != mevcut_kullanici.user_id:
+        raise HTTPException(status_code=403, detail="Sadece harcamayı ekleyen kişi bu harcamayı silebilir.")
+        
+    db.delete(harcama)
+    db.commit()
+    return {"mesaj": "Harcama başarıyla silindi."}
+
+# --- ÖDEME, İTİRAZ VE BİLDİRİM UÇ NOKTALARI ---
 
 @app.post("/odemeler", response_model=schemas.OdemeResponse)
 def odeme_yap(odeme: schemas.OdemeCreate, db: Session = Depends(get_db), mevcut_kullanici: models.Kullanici = Depends(aktif_kullaniciyi_getir)):
@@ -298,6 +321,5 @@ def bildirimleri_getir(db: Session = Depends(get_db), mevcut_kullanici: models.K
     
     return bildirimler
 
-# Projenin doğrudan python komutuyla tetiklenmesini sağlayan giriş noktası
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
